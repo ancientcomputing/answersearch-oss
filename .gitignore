@@ -5,3 +5,5 @@ dist/
 .DS_Store
 .env
 .env.*
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
