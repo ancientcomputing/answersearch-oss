@@ -40,6 +40,10 @@ let package = Package(
     platforms: [.macOS("26.0")],
     products: [
         .executable(name: "AnswerSearch", targets: ["AnswerSearch"]),
+        // Re-vended so AnswerSearch.xcodeproj can depend on them by name.
+        .library(name: "AnswerSearchKit", targets: ["AnswerSearchKit"]),
+        .library(name: "LocalLMLabSDKCore", targets: ["LocalLMLabSDKCore"]),
+        .library(name: "LocalLMLabSDKRemote", targets: ["LocalLMLabSDKRemote"]),
     ],
     targets: [
         .binaryTarget(

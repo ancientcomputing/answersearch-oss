@@ -14,6 +14,9 @@ chat thread), with a single related follow-up. Open source under Apache 2.0.
 It is built on the [LocalLM Lab SDK](https://github.com/ancientcomputing/locallm) (2.3.0-GA): the SDK
 provides the model layer: hosted providers with web search and citations, and Apple's on-device
 model.
+The SDK binaries come from the
+[v2.3.0-GA release](https://github.com/ancientcomputing/locallm/releases/tag/v2.3.0-GA); for
+everything about LocalLM Lab, see [thisbrain.ai/locallm](https://thisbrain.ai/locallm).
 
 ## Requirements
 
@@ -29,6 +32,13 @@ cd answersearch-oss
 scripts/build_app.sh
 open dist/AnswerSearch.app
 ```
+
+### Xcode
+
+Open `AnswerSearch.xcodeproj` and press Run (scheme **AnswerSearch**). It uses ad-hoc signing,
+no sandbox, and resolves the SDK through the root `Package.swift`. To distribute, set your team and
+signing identity on the target. (Opening `Package.swift` directly also works for building and
+testing.)
 
 On first launch, pick a provider and paste your API key. The first build downloads and
 checksum-verifies the SDK binaries from GitHub Releases. `swift test` runs the unit tests.
