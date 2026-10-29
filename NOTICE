@@ -1,0 +1,9 @@
+AnswerSearch
+Copyright 2026 ThisBrainAI LLC
+
+This product includes software developed by ThisBrainAI LLC (https://thisbrain.ai).
+
+AnswerSearch is built on the LocalLM Lab SDK (https://github.com/ancientcomputing/locallm).
+The SDK's binary xcframeworks are downloaded at build time and are distributed under their own
+terms; see that repository's LICENSE and NOTICE, which list the open-source components they bundle
+(including ClaudeForFoundationModels, mlx-swift and swift-transformers).
