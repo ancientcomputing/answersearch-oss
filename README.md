@@ -18,6 +18,10 @@ The SDK binaries come from the
 [v2.3.0-GA release](https://github.com/ancientcomputing/locallm/releases/tag/v2.3.0-GA); for
 everything about LocalLM Lab, see [thisbrain.ai/locallm](https://thisbrain.ai/locallm).
 
+## Mac App Store
+
+A Mac App Store version of AnswerSearch is available here: https://apps.apple.com/app/answersearch/id6797641255
+
 ## Requirements
 
 - Apple Silicon Mac, macOS 26+ and Xcode 26+ (Swift 6) to build.
@@ -57,10 +61,6 @@ Local AI is a two-step flow over `SystemModelProvider`: a guided-generation tria
 defers anything not clearly safe (current events, facts needing sources), then a short answer.
 Follow-ups carry only the one previous question and answer.
 
-## Not included
-
-This is the macOS app only. The earlier Windows, Go-engine and browser-UI versions are not part of
-this repository, because the SDK is macOS-only.
 
 ## License
 
