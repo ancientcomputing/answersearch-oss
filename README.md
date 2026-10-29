@@ -22,6 +22,10 @@ everything about LocalLM Lab, see [thisbrain.ai/locallm](https://thisbrain.ai/lo
 
 A Mac App Store version of AnswerSearch is available here: https://apps.apple.com/app/answersearch/id6797641255
 
+The App Store version is a separate, closed-source codebase and is not built from this repository.
+This repository is an open-source rewrite on the LocalLM Lab SDK, so features and behavior may
+differ between the two.
+
 ## Requirements
 
 - Apple Silicon Mac, macOS 26+ and Xcode 26+ (Swift 6) to build.
