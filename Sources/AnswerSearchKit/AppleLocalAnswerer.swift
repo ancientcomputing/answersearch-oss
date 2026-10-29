@@ -34,7 +34,13 @@ private struct LocalTriage {
 ///
 /// Answering is deliberately conservative: a first "triage" call decides whether the question is
 /// a stable, self-contained task (arithmetic, unit conversion, simple definitions, ...). Anything
-/// else is deferred, and the caller falls back to the configured provider.
+/// else is deferred, and `AnswerEngine` falls back to the configured online provider (Fast AI
+/// behavior: short, no web search).
+///
+/// SDK usage: `lab.models.availability(for: .system)` for the Local AI status, then
+/// `lab.makeSession` on the `.system` model. Guided generation goes through
+/// `session.languageModelSession` (the SDK guide, "Running a turn": the one case the SDK has no
+/// turn method for); the plain-text answer uses `session.respond`.
 @MainActor
 public final class AppleLocalAnswerer: LocalAnswering {
     private let lab: LocalLMLab
@@ -44,6 +50,8 @@ public final class AppleLocalAnswerer: LocalAnswering {
         self.lab = lab
     }
 
+    /// Maps the SDK's `ModelAvailability` for the on-device model onto what Settings shows
+    /// (ineligible hardware, Apple Intelligence off, model still downloading, ...).
     public var availability: LocalAIAvailability {
         Self.availability(from: lab.models.availability(for: .system))
     }
@@ -81,11 +89,13 @@ public final class AppleLocalAnswerer: LocalAnswering {
     }
 
     public func answer(_ request: AnswerRequest) async throws -> LocalOutcome {
+        // Not available on this Mac: defer, and the caller answers with the online provider.
         guard availability.supported else { return .deferred(reason: "local_model_unavailable") }
         lab.models.route(Self.route, to: .system)
 
         let prompts = LocalPrompts(request: request)
 
+        // Step 1: triage. Guided generation returns a typed `LocalTriage`, not free text to parse.
         let triageSession = try lab.makeSession(route: Self.route, includeMCPTools: false)
         let triage = try await triageSession.languageModelSession
             .respond(to: prompts.triage, generating: LocalTriage.self).content
@@ -94,13 +104,17 @@ public final class AppleLocalAnswerer: LocalAnswering {
             requiresExternal: triage.requiresExternalInfo, requiresCurrent: triage.requiresCurrentInfo,
             reason: triage.reason
         )
+        // Defer unless the model is highly confident the question is stable, self-contained and
+        // local-safe. Anything needing current facts or sources goes online.
         guard decision.allowsLocalAnswer else {
             return .deferred(reason: decision.reason)
         }
 
+        // Step 2: a fresh session answers the triaged question.
         let answerSession = try lab.makeSession(route: Self.route, includeMCPTools: false)
         let text = try await answerSession.respond(to: prompts.answer)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        // An empty answer also defers rather than showing nothing.
         return text.isEmpty ? .deferred(reason: "empty_local_answer") : .answer(text)
     }
 }

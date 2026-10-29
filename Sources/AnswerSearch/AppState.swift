@@ -39,6 +39,8 @@ final class AppState: ObservableObject {
         if let engine {
             self.engine = engine
         } else {
+            // One `LocalLMLab` for the app. `SystemModelProvider` (Apple's on-device model) is
+            // always registered; the hosted provider is added per turn by `SDKProviderAnswerer`.
             let lab = LocalLMLab(configuration: .init(providers: [SystemModelProvider()]))
             self.engine = AnswerEngine(
                 settings: loaded,

@@ -66,6 +66,21 @@ defers anything not clearly safe (current events, facts needing sources), then a
 Follow-ups carry only the one previous question and answer.
 
 
+## Where the SDK is used
+
+All SDK calls are in three small places, annotated with the reasoning and SDK guide references:
+
+- `Sources/AnswerSearchKit/SDKProviderAnswerer.swift`: hosted Claude/OpenAI answers, web search,
+  citations.
+- `Sources/AnswerSearchKit/AppleLocalAnswerer.swift`: on-device Local AI, availability, guided
+  generation.
+- `Sources/AnswerSearch/AppState.swift`: creating the shared `LocalLMLab`.
+
+The hand-off from Local AI to the online provider lives in `AnswerEngine.search` and `tryLocal`
+(`Sources/AnswerSearchKit/AnswerEngine.swift`).
+
+For a guided tour with code excerpts, see [docs/annotations](docs/annotations/README.md).
+
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE). The name and icon are trademarks

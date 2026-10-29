@@ -116,6 +116,9 @@ public final class AnswerEngine {
             request = request.providerFast
         }
 
+        // Local AI is tried first only in Local AI mode, when opted in and available. If it defers,
+        // errors or answers nothing, the same question goes to the online provider below, using
+        // Fast AI behavior (`providerFast`).
         if route.useLocal {
             onStatus("Checking with AI on this Mac...")
             if let result = await tryLocal(request, question: question, reason: route.reason) {
@@ -161,6 +164,8 @@ public final class AnswerEngine {
         return result
     }
 
+    /// Returns nil whenever the on-device model should not answer (deferred, empty or failed), which
+    /// tells `search` to fall back to the online provider.
     private func tryLocal(_ request: AnswerRequest, question: String, reason: LocalRouteReason) async -> SearchResult? {
         let outcome: LocalOutcome
         do {

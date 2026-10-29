@@ -4,6 +4,11 @@ import LocalLMLabSDKRemote
 
 /// Hosted-provider answers through the LocalLM Lab SDK's `RemoteModelProvider`.
 ///
+/// SDK usage, in order: build a `RemoteProviderConfig` -> register it with
+/// `lab.models.replace` -> point a route at the model -> `lab.makeSession` -> `session.respond`,
+/// then read `session.events` / `session.citations`. See the SDK guide, section 6b (online
+/// providers) and 6a (sessions): https://github.com/ancientcomputing/locallm/blob/2.3.0-GA/docs/sdk-guide.md
+///
 /// One `RemoteProviderConfig` per provider is (re-)registered on the shared `LocalLMLab` before each
 /// turn, so a changed API key or model takes effect immediately. The SDK's remote layer needs
 /// macOS 27; on macOS 26 only the on-device Local AI mode is available.
@@ -45,11 +50,16 @@ public final class SDKProviderAnswerer: ProviderAnswering {
         let model = request.model.trimmingCharacters(in: .whitespacesAndNewlines)
         let models = [RemoteModel(id: model.isEmpty ? provider.defaultModel : model)]
 
+        // Presets fill in the dialect, base URL and auth shape. The SDK ships no model ids, so the
+        // id comes from Settings. Anthropic uses the Messages API; OpenAI uses the Responses API
+        // (the same API the earlier AnswerSearch builds used for hosted web search).
         var config: RemoteProviderConfig
         switch provider {
         case .anthropic: config = .anthropic(apiKey: apiKey, models: models)
         case .openai: config = .openAIResponses(apiKey: apiKey, models: models)
         }
+        // Declares that this provider can run web search. Whether a given turn does is decided by
+        // `SessionOptions.webSearch` below.
         config.capabilities.insert(.webSearch)
 
         // `RemoteModelProvider.init` validates the config (HTTPS base URL, credential syntax).
@@ -59,13 +69,18 @@ public final class SDKProviderAnswerer: ProviderAnswering {
         } catch {
             throw SearchError(.configurationRequired, error.localizedDescription)
         }
+        // Register (or re-register) the provider before every turn so a changed key or model
+        // takes effect immediately; `replace` swaps in place without rebuilding `LocalLMLab`.
         lab.models.replace(remote)
 
         guard let modelID = ModelID(scheme: config.scheme, rest: models[0].id) else {
             throw SearchError(.configurationRequired, "\"\(models[0].id)\" is not a valid model name.")
         }
+        // A route is a name the app owns; sessions ask for the route, not a hard-coded model.
         lab.models.route(Self.route, to: modelID)
 
+        // Per-turn knobs. The provider runs the web search itself (no MCP server needed), and
+        // `userLocation` localizes results. It is only sent when web search is on.
         var options = SessionOptions(
             webSearch: request.useWebSearch,
             webSearchMaxUses: request.useWebSearch ? request.webSearchMaxUses : nil,
@@ -75,6 +90,8 @@ public final class SDKProviderAnswerer: ProviderAnswering {
             options.userLocation = Self.userLocation(request.location)
         }
 
+        // `instructions` become the system prompt. `includeMCPTools: false` because AnswerSearch
+        // configures no MCP servers and wants a plain answer turn.
         let session = try lab.makeSession(
             route: Self.route,
             instructions: Prompts.system(for: request),
@@ -82,6 +99,8 @@ public final class SDKProviderAnswerer: ProviderAnswering {
             options: options
         )
 
+        // `session.events` reports provider-run web searches as they happen, so the UI can show
+        // "Searching the web..." before the answer arrives.
         let tracker = SearchTracker()
         let events = Task { @MainActor in
             for await event in session.events {
@@ -103,6 +122,8 @@ public final class SDKProviderAnswerer: ProviderAnswering {
             throw SearchError(.providerError, Self.describe(error))
         }
 
+        // `session.citations` is filled in by `respond`: the sources the provider cited. If the
+        // provider cited nothing, fall back to the pages the search returned.
         var sources = session.citations.map { Source(title: $0.title, url: $0.url, citedText: $0.citedText) }
         if sources.isEmpty {
             sources = tracker.hits.map { Source(title: $0.title, url: $0.url, citedText: $0.snippet) }
